@@ -1,0 +1,40 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "老闆",
+      "email": "admin@test.com",
+      "password": "123",
+      "role": "核心管理",
+      "permissions": [
+        "all"
+      ]
+    },
+    {
+      "id": 1770479399806,
+      "name": "小王",
+      "email": "wang@test.com",
+      "password": "456",
+      "role": "自訂",
+      "permissions": [
+        "商店概況"
+      ],
+      "lineId": null
+    }
+  ],
+  "roles": [
+    {
+      "name": "核心管理",
+      "access": [
+        "all"
+      ]
+    },
+    {
+      "name": "一般人員",
+      "access": [
+        "商品管理",
+        "訂單管理"
+      ]
+    }
+  ]
+}

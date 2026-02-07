@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>商家後台管理系統</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: "Microsoft JhengHei", sans-serif; background: #f9f9f9; }
+        
+        /* 登入介面樣式鎖定 */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { background: white; padding: 40px; border-radius: 30px; width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        .line-btn { background: #06C755; color: white; border: none; padding: 15px; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 25px; font-size: 16px; }
+        .input-group { margin-bottom: 15px; }
+        .input-group input { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 50px; box-sizing: border-box; font-size: 16px; outline: none; }
+        .login-btn { width: 100%; padding: 15px; background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 50px; cursor: pointer; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        .forget-pwd { color: #3F51B5; text-decoration: none; font-size: 14px; display: block; margin-top: 10px; }
+
+        /* 主後台樣式鎖定 */
+        #admin-main { display: none; height: 100vh; flex-direction: column; }
+        .header { background: #3F51B5; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .main-body { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 220px; background: white; border-right: 1px solid #eee; overflow-y: auto; }
+        .menu-item { padding: 12px 20px; cursor: pointer; color: #555; font-size: 14px; border-bottom: 1px solid #fafafa; }
+        .menu-item.active { background: #f0f2ff; color: #3F51B5; border-left: 4px solid #3F51B5; font-weight: bold; }
+        
+        .content { flex: 1; padding: 30px; overflow-y: auto; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        /* 視覺按鈕鎖定：黃色修改、紅色刪除 */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #eee; text-align: left; }
+        .edit-btn { background: #FFC107; color: #000; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 8px; }
+        .del-btn { background: #F44336; color: #fff; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .bind-btn { background: #06C755; color: white; border: none; padding: 8px 15px; border-radius: 50px; cursor: pointer; font-size: 13px; font-weight: bold; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 480px; }
+        .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; font-size: 13px; }
+        /* 當選單被選中時的樣式 */
+.menu-item.active {
+    background-color: #e8eaf6 !important; /* 淡淡的紫色背景 */
+    color: #3F51B5 !important;           /* 文字變成深藍紫色 */
+    border-left: 5px solid #3F51B5;      /* 左側出現一條粗邊框 */
+    font-weight: bold;                   /* 文字加粗 */
+    transition: all 0.3s ease;           /* 增加平滑轉場效果 */
+}
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay" style="display: none;">
+        <div class="login-box">
+            <div style="font-size:28px; font-weight:bold; color:#3F51B5; margin-bottom:5px;">MY LOGO</div>
+            <div style="font-size:22px; margin-bottom: 25px;">商家後台登入</div>
+            <button class="line-btn">使用 LINE 快速登入</button>
+            <div style="border-top: 1px solid #eee; padding-top: 25px;">
+                <div class="input-group"><input type="email" id="email" placeholder="信箱"></div>
+                <div class="input-group"><input type="password" id="password" placeholder="密碼"></div>
+                <button class="login-btn">登入</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-main" style="display: flex;">
+        <div class="header">
+            <span>🛒 MY SHOP 管理系統</span>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span id="user-display">👤 老闆 (開發模式)</span>
+                <button class="bind-btn">🔗 綁定個人 LINE</button>
+                <button onclick="location.reload()" style="background:none; border:1px solid white; color:white; padding:5px 10px; border-radius:4px; cursor:pointer;">重新整理</button>
+            </div>
+        </div>
+        <div class="main-body">
+            <div class="sidebar" id="sidebar-menu"></div>
+            <div class="content">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2 style="margin:0;">👥 人員管理</h2>
+                        <button class="login-btn" style="width:auto; padding:10px 20px; font-size:14px;" onclick="openAddModal()">＋ 新增人員</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>稱呼</th><th>Email</th><th>LINE 狀態</th><th>權限</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="staff-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="staffModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">新增人員</h3>
+            <input type="hidden" id="editId">
+            <div class="input-group"><input type="text" id="newName" placeholder="人員稱呼"></div>
+            <div class="input-group"><input type="email" id="newEmail" placeholder="登入 Email"></div>
+            <div class="input-group"><input type="password" id="newPass" placeholder="密碼"></div>
+            <p><b>指派功能權限：</b></p>
+            <div id="perm-grid" class="perm-grid"></div>
+            <div style="margin-top:20px;">
+                <button onclick="saveStaff()" style="width:100%; padding:12px; background:#3F51B5; color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">儲存設定</button>
+                <button onclick="closeModal()" style="width:100%; padding:10px; background:#eee; border:none; border-radius:5px; margin-top:10px; cursor:pointer;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // 1. 定義選單資料 (維持你原本的 13 項)
+    const MENUS = ["🚩 開店步驟", "🏠 商店概況", "⚙️ 商店設定", "🪄 樣式設定", "👥 人員管理", "📦 商品管理", "🏷️ 促銷管理", "📋 訂單管理", "📢 行銷推廣", "👤 顧客管理", "🎯 狙擊追單", "📈 數據分析", "📝 文章管理"];
+    // 商店設定的子項目 (共 8 項)
+    const storeSubItems = ["基本設定", "收款方式", "送貨方式", "退貨方式", "倉儲方式", "購物車管理", "資料匯出設定", "自訂301轉址"];
+
+    window.onload = function() {
+        renderSidebar();
+        // 頁面初次載入時，直接顯示人員管理
+        switchTab('👥 人員管理');
+    };
+
+    // 生成左側選單邏輯
+    function renderSidebar() {
+        const sidebar = document.getElementById('sidebar-menu');
+        sidebar.innerHTML = MENUS.map(m => {
+            // 在 renderSidebar 函式內尋找並修改這段
+if (m === "⚙️ 商店設定") {
+    return `
+        <div class="menu-item" onclick="toggleStoreMenu(this)">
+            ${m} <span style="float:right; font-size:10px;">▼</span>
+        </div>
+        <div id="sub-store-box" style="display:none; background:#f4f6ff; border-left: 2px solid #ddd;">
+            ${storeSubItems.map(sub => `
+                <div class="menu-item sub-item" style="padding-left:40px; font-size:13px;" onclick="switchTab('${sub}')">
+                    ${sub}
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+            return `<div class="menu-item ${m==='👥 人員管理'?'active':''}" onclick="switchTab('${m}')">${m}</div>`;
+        }).join('');
+    }
+
+    // 控制商店設定下拉
+    function toggleStoreMenu(el) {
+        const box = document.getElementById('sub-store-box');
+        const isHidden = box.style.display === 'none';
+        box.style.display = isHidden ? 'block' : 'none';
+        el.querySelector('span').innerText = isHidden ? '▲' : '▼';
+    }
+
+    // 切換頁面主邏輯
+    function switchTab(tabName) {
+    const contentDiv = document.querySelector('.content');
+
+    // 1. 處理選單高亮反應
+    document.querySelectorAll('.menu-item').forEach(item => {
+        // 先移除所有人的 active 樣式
+        item.classList.remove('active');
+        
+        // 如果選單的文字內容「包含」我們點擊的名稱，就幫它加上 active
+        // 使用 trim() 是為了避免空格影響判斷
+        if (item.innerText.trim().includes(tabName)) {
+            item.classList.add('active');
+        }
+    });
+
+    // 2. 原有的頁面切換邏輯
+    if (tabName === '👥 人員管理') {
+        renderStaffPage(contentDiv);
+    } else if (tabName === '基本設定') {
+        renderBasicSettingsPage(contentDiv);
+    } else {
+        contentDiv.innerHTML = `<div class="card"><h2>${tabName} 頁面建置中</h2></div>`;
+    }
+}
+
+    // --- 人員管理頁面 ---
+    function renderStaffPage(container) {
+        container.innerHTML = `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                    <h2 style="margin:0;">👥 人員管理</h2>
+                    <button class="login-btn" style="width:auto; padding:10px 20px;" onclick="openAddModal()">＋ 新增人員</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>稱呼</th><th>Email</th><th>LINE 狀態</th><th>權限</th><th>操作</th></tr>
+                    </thead>
+                    <tbody id="staff-list"></tbody>
+                </table>
+            </div>`;
+        loadStaff();
+    }
+
+    // 載入人員資料 (保留你原本的 API 串接邏輯與老闆保護)
+    function loadStaff() {
+        fetch('/api/staff').then(res => res.json()).then(data => {
+            const list = document.getElementById('staff-list');
+            if(!list) return;
+            list.innerHTML = data.map(u => `
+                <tr>
+                    <td>${u.name}</td>
+                    <td>${u.email}</td>
+                    <td>${u.lineId ? '<span style="color:green; font-weight:bold;">已連動</span>' : '<span style="color:red; font-weight:bold;">未連動</span>'}</td>
+                    <td><small>${u.permissions.includes('all')?'全部':u.permissions.join(', ')}</small></td>
+                    <td>
+                        <button class="edit-btn" onclick='openEditModal(${JSON.stringify(u)})'>修改</button>
+                        ${u.id != 1 ? `<button class="del-btn" onclick="deleteStaff(${u.id})">刪除</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        });
+    }
+
+    // --- 彈窗控制 (修正：恢復 13 個完整權限) ---
+    function openAddModal() {
+        document.getElementById('modalTitle').innerText = "新增人員";
+        document.getElementById('editId').value = "";
+        document.getElementById('newName').value = "";
+        document.getElementById('newEmail').value = "";
+        document.getElementById('newPass').value = "";
+        
+        // 恢復顯示 MENUS 裡所有的 13 個權限
+        document.getElementById('perm-grid').innerHTML = MENUS.map(m => `
+            <label style="display:flex; align-items:center; gap:5px; font-size:14px;">
+                <input type="checkbox" value="${m}"> ${m}
+            </label>
+        `).join('');
+        
+        document.getElementById('staffModal').style.display = 'flex';
+    }
+
+    function openEditModal(u) {
+        document.getElementById('modalTitle').innerText = "修改人員資料";
+        document.getElementById('editId').value = u.id;
+        document.getElementById('newName').value = u.name;
+        document.getElementById('newEmail').value = u.email;
+        document.getElementById('newPass').value = "";
+        
+        // 編輯時同樣恢復 13 個完整權限清單
+        document.getElementById('perm-grid').innerHTML = MENUS.map(m => `
+            <label style="display:flex; align-items:center; gap:5px; font-size:14px;">
+                <input type="checkbox" value="${m}" ${u.permissions.includes(m)?'checked':''}> ${m}
+            </label>
+        `).join('');
+        document.getElementById('staffModal').style.display = 'flex';
+    }
+
+    // --- 基本設定頁面 (仿照截圖排版) ---
+    function renderBasicSettingsPage(container) {
+        container.innerHTML = `
+            <div class="card">
+                <h2 style="color:#3F51B5; border-bottom:1px solid #eee; padding-bottom:10px;">⚙️ 基本設定</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div style="border:1px solid #eee; padding:15px; border-radius:10px; background:#fafafa;">
+                        <h4 style="margin-top:0; color:#3F51B5;">🔗 前台社群連結</h4>
+                        <div class="input-group"><label>Facebook</label><input type="text" placeholder="URL"></div>
+                        <div class="input-group"><label>Instagram</label><input type="text" placeholder="URL"></div>
+                        <div class="input-group"><label>LINE ID</label><input type="text" value="@550hhzzh"></div>
+                    </div>
+                    <div style="border:1px solid #eee; padding:15px; border-radius:10px; background:#fafafa;">
+                        <h4 style="margin-top:0; color:#3F51B5;">🔍 SEO 相關設定</h4>
+                        <div class="input-group"><label>首頁標題 (SEO Title)</label><input type="text" value="貓董 | 全台手機維修"></div>
+                        <div class="input-group"><label>首頁描述 (Description)</label><textarea style="width:100%; height:60px;"></textarea></div>
+                    </div>
+                </div>
+                <div style="text-align:center; margin-top:20px;">
+                    <button class="login-btn" style="width:200px;" onclick="alert('設定已儲存')">儲存基本設定</button>
+                </div>
+            </div>`;
+    }
+
+    function saveStaff() {
+        const id = document.getElementById('editId').value;
+        const body = {
+            name: document.getElementById('newName').value,
+            email: document.getElementById('newEmail').value,
+            permissions: Array.from(document.querySelectorAll('#perm-grid input:checked')).map(c => c.value)
+        };
+        const pass = document.getElementById('newPass').value;
+        if(pass) body.password = pass;
+
+        fetch(id ? `/api/staff/${id}` : '/api/staff', {
+            method: id ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(() => { closeModal(); switchTab('👥 人員管理'); });
+    }
+
+    function deleteStaff(id) {
+        if(confirm('確定刪除此人員？')) fetch(`/api/staff/${id}`, { method: 'DELETE' }).then(() => switchTab('👥 人員管理'));
+    }
+
+    function closeModal() { document.getElementById('staffModal').style.display = 'none'; }
+</script>
+</body>
+</html>
